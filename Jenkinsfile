@@ -225,7 +225,9 @@ PY
             sh "git checkout -B ${env.GITOPS_PUSH_BRANCH}"
             sh "git add ${env.GITOPS_PATH_PREFIX}/*.values.yaml"
             sh "git commit -m \"${env.DEPLOY_ENV}: bump images to ${env.IMAGE_TAG}\" || true"
-            sh "git push origin ${env.GITOPS_PUSH_BRANCH}"
+            sshagent(credentials: ['gitops-push-key']) {
+              sh "git push origin ${env.GITOPS_PUSH_BRANCH}"
+            }
           }
         }
       }
