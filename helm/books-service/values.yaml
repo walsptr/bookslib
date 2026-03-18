@@ -1,0 +1,31 @@
+replicaCount: 1
+
+image:
+  repository: your-registry/books-service
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: books.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+secrets:
+  existingSecretName: ""
+  keys:
+    connectionString: ConnectionStrings__DefaultConnection
+
+resources: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}
