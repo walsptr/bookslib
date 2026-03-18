@@ -70,6 +70,11 @@ pipeline {
           def isPR = env.CHANGE_ID
           env.DEPLOY_ENABLED = (!isPR && (env.BRANCH_NAME == 'dev' || env.BRANCH_NAME == 'main')) ? 'true' : 'false'
 
+          env.BUILD_AUTH = env.CHANGE_AUTH
+          env.BUILD_BOOKS = env.CHANGE_BOOKS
+          env.BUILD_REVIEWS = env.CHANGE_REVIEWS
+          env.BUILD_FRONTEND = env.CHANGE_FRONTEND
+
           if (env.DEPLOY_ENABLED != 'true') {
             env.DEPLOY_ENV = 'none'
             env.GITOPS_PATH_PREFIX = ''
@@ -90,6 +95,32 @@ pipeline {
       }
     }
 
+    stage('Decide Build Set') {
+      when {
+        expression { return env.DEPLOY_ENABLED == 'true' }
+      }
+      steps {
+        script {
+          def hasCurl = sh(script: 'command -v curl >/dev/null 2>&1', returnStatus: true) == 0
+
+          def repoExists = { String repo ->
+            if (!hasCurl) {
+              return true
+            }
+            return sh(
+              script: "curl -fsS https://hub.docker.com/v2/repositories/${env.DOCKERHUB_USER}/${repo}/ >/dev/null",
+              returnStatus: true
+            ) == 0
+          }
+
+          env.BUILD_AUTH = (env.CHANGE_AUTH == 'true' || !repoExists('auth-service')) ? 'true' : 'false'
+          env.BUILD_BOOKS = (env.CHANGE_BOOKS == 'true' || !repoExists('books-service')) ? 'true' : 'false'
+          env.BUILD_REVIEWS = (env.CHANGE_REVIEWS == 'true' || !repoExists('reviews-service')) ? 'true' : 'false'
+          env.BUILD_FRONTEND = (env.CHANGE_FRONTEND == 'true' || !repoExists('bookslib-frontend')) ? 'true' : 'false'
+        }
+      }
+    }
+
     stage('Registry Login') {
       when {
         expression { return env.DEPLOY_ENABLED == 'true' }
@@ -106,16 +137,16 @@ pipeline {
     stage('Build & Test') {
       steps {
         script {
-          if (env.CHANGE_AUTH == 'true') {
+          if (env.BUILD_AUTH == 'true') {
             sh 'docker build -f auth-service/Dockerfile --target test -t auth-service:test auth-service'
           }
-          if (env.CHANGE_BOOKS == 'true') {
+          if (env.BUILD_BOOKS == 'true') {
             sh 'docker build -f books-service/Dockerfile --target test -t books-service:test books-service'
           }
-          if (env.CHANGE_REVIEWS == 'true') {
+          if (env.BUILD_REVIEWS == 'true') {
             sh 'docker build -f reviews-service/Dockerfile --target test -t reviews-service:test reviews-service'
           }
-          if (env.CHANGE_FRONTEND == 'true') {
+          if (env.BUILD_FRONTEND == 'true') {
             sh 'docker build -f frontend/Dockerfile --target test -t frontend:test frontend'
           }
         }
@@ -128,16 +159,16 @@ pipeline {
       }
       steps {
         script {
-          if (env.CHANGE_AUTH == 'true') {
+          if (env.BUILD_AUTH == 'true') {
             sh "docker build -f auth-service/Dockerfile --target production -t ${AUTH_IMAGE}:${IMAGE_TAG} auth-service"
           }
-          if (env.CHANGE_BOOKS == 'true') {
+          if (env.BUILD_BOOKS == 'true') {
             sh "docker build -f books-service/Dockerfile --target production -t ${BOOKS_IMAGE}:${IMAGE_TAG} books-service"
           }
-          if (env.CHANGE_REVIEWS == 'true') {
+          if (env.BUILD_REVIEWS == 'true') {
             sh "docker build -f reviews-service/Dockerfile --target production -t ${REVIEWS_IMAGE}:${IMAGE_TAG} reviews-service"
           }
-          if (env.CHANGE_FRONTEND == 'true') {
+          if (env.BUILD_FRONTEND == 'true') {
             sh "docker build -f frontend/Dockerfile --target production -t ${FRONTEND_IMAGE}:${IMAGE_TAG} frontend"
           }
         }
@@ -150,16 +181,16 @@ pipeline {
       }
       steps {
         script {
-          if (env.CHANGE_AUTH == 'true') {
+          if (env.BUILD_AUTH == 'true') {
             sh "docker push ${AUTH_IMAGE}:${IMAGE_TAG}"
           }
-          if (env.CHANGE_BOOKS == 'true') {
+          if (env.BUILD_BOOKS == 'true') {
             sh "docker push ${BOOKS_IMAGE}:${IMAGE_TAG}"
           }
-          if (env.CHANGE_REVIEWS == 'true') {
+          if (env.BUILD_REVIEWS == 'true') {
             sh "docker push ${REVIEWS_IMAGE}:${IMAGE_TAG}"
           }
-          if (env.CHANGE_FRONTEND == 'true') {
+          if (env.BUILD_FRONTEND == 'true') {
             sh "docker push ${FRONTEND_IMAGE}:${IMAGE_TAG}"
           }
         }
@@ -205,10 +236,10 @@ PY
               """
             }
 
-            if (env.CHANGE_AUTH == 'true') updateYaml("${env.GITOPS_PATH_PREFIX}/auth-service.values.yaml")
-            if (env.CHANGE_BOOKS == 'true') updateYaml("${env.GITOPS_PATH_PREFIX}/books-service.values.yaml")
-            if (env.CHANGE_REVIEWS == 'true') updateYaml("${env.GITOPS_PATH_PREFIX}/reviews-service.values.yaml")
-            if (env.CHANGE_FRONTEND == 'true') updateYaml("${env.GITOPS_PATH_PREFIX}/frontend.values.yaml")
+            if (env.BUILD_AUTH == 'true') updateYaml("${env.GITOPS_PATH_PREFIX}/auth-service.values.yaml")
+            if (env.BUILD_BOOKS == 'true') updateYaml("${env.GITOPS_PATH_PREFIX}/books-service.values.yaml")
+            if (env.BUILD_REVIEWS == 'true') updateYaml("${env.GITOPS_PATH_PREFIX}/reviews-service.values.yaml")
+            if (env.BUILD_FRONTEND == 'true') updateYaml("${env.GITOPS_PATH_PREFIX}/frontend.values.yaml")
           }
         }
       }
