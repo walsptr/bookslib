@@ -1,7 +1,7 @@
 replicaCount: 1
 
 image:
-  repository: your-registry/bookslib-frontend
+  repository: sywlsptr/bookslib-frontend
   tag: latest
   pullPolicy: IfNotPresent
 
