@@ -6,11 +6,7 @@ pipeline {
     GITOPS_BRANCH = 'main'
 
     RUN_TESTS = 'false'
-<<<<<<< HEAD
     FORCE_BUILD_ALL = 'true'
-=======
-    FORCE_BUILD_ALL = 'false'
->>>>>>> origin/dev
 
     DOCKERHUB_USER = 'sywlsptr'
 
