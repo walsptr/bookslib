@@ -6,7 +6,7 @@ pipeline {
     GITOPS_BRANCH = 'main'
 
     RUN_TESTS = 'false'
-    FORCE_BUILD_ALL = 'true'
+    FORCE_BUILD_ALL = 'false'
 
     DOCKERHUB_USER = 'sywlsptr'
 
