@@ -1,5 +1,6 @@
 {{- $name := .Chart.Name -}}
-{{- $fullName := printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
+{{- $defaultFullName := printf "%s-%s" .Release.Name $name -}}
+{{- $fullName := (default $defaultFullName .Values.fullnameOverride) | trunc 63 | trimSuffix "-" -}}
 {{- $labels := dict "app.kubernetes.io/name" $name "app.kubernetes.io/instance" .Release.Name -}}
 
 apiVersion: apps/v1
