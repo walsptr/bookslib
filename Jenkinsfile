@@ -75,11 +75,7 @@ pipeline {
       steps {
         script {
           def isPR = env.CHANGE_ID
-<<<<<<< HEAD
-          env.DEPLOY_ENABLED = (!isPR && (env.BRANCH_NAME == 'dev' || env.BRANCH_NAME == 'main')) ? 'true' : 'false'
-=======
           env.DEPLOY_ENABLED = (!isPR && (env.BRANCH_NAME == 'dev' || env.BRANCH_NAME == 'prod')) ? 'true' : 'false'
->>>>>>> origin/dev
 
           env.BUILD_AUTH = env.CHANGE_AUTH
           env.BUILD_BOOKS = env.CHANGE_BOOKS
