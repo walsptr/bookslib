@@ -3,7 +3,7 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
-	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -11,19 +11,7 @@ import (
 	_ "github.com/lib/pq"
 )
 
-var (
-	db            *sql.DB
-	errDBNotReady = errors.New("db not initialized")
-	queryUserID   = func(username, password string) (int, error) {
-		if db == nil {
-			return 0, errDBNotReady
-		}
-
-		var id int
-		err := db.QueryRow("SELECT id FROM users WHERE username = $1 AND password = $2", username, password).Scan(&id)
-		return id, err
-	}
-)
+var db *sql.DB
 
 type User struct {
 	Username string `json:"username"`
@@ -46,11 +34,6 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 	var u User
 	json.NewDecoder(r.Body).Decode(&u)
 
-	if db == nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
 	_, err := db.Exec("INSERT INTO users (username, password) VALUES ($1, $2)", u.Username, u.Password)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -71,15 +54,14 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	var u User
 	json.NewDecoder(r.Body).Decode(&u)
 
-	_, err := queryUserID(u.Username, u.Password)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(map[string]string{"error": "Invalid credentials"})
-			return
-		}
+	query := fmt.Sprintf("SELECT id FROM users WHERE username = '%s' AND password = '%s'", u.Username, u.Password)
 
-		w.WriteHeader(http.StatusInternalServerError)
+	var id int
+	err := db.QueryRow(query).Scan(&id)
+
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Invalid credentials"})
 		return
 	}
 

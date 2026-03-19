@@ -6,6 +6,7 @@ pipeline {
     GITOPS_BRANCH = 'main'
 
     RUN_TESTS = 'false'
+    FORCE_BUILD_ALL = 'true'
 
     DOCKERHUB_USER = 'sywlsptr'
 
@@ -48,10 +49,10 @@ pipeline {
           }
 
           def changed = [
-            auth: diff.contains('auth-service/'),
-            books: diff.contains('books-service/'),
-            reviews: diff.contains('reviews-service/'),
-            frontend: diff.contains('frontend/')
+            auth: (diff.contains('auth-service/') || diff.contains('helm/auth-service/')),
+            books: (diff.contains('books-service/') || diff.contains('helm/books-service/')),
+            reviews: (diff.contains('reviews-service/') || diff.contains('helm/reviews-service/')),
+            frontend: (diff.contains('frontend/') || diff.contains('helm/frontend/'))
           ]
 
           if (!diff) {
@@ -115,10 +116,17 @@ pipeline {
             ) == 0
           }
 
-          env.BUILD_AUTH = (env.CHANGE_AUTH == 'true' || !repoExists('auth-service')) ? 'true' : 'false'
-          env.BUILD_BOOKS = (env.CHANGE_BOOKS == 'true' || !repoExists('books-service')) ? 'true' : 'false'
-          env.BUILD_REVIEWS = (env.CHANGE_REVIEWS == 'true' || !repoExists('reviews-service')) ? 'true' : 'false'
-          env.BUILD_FRONTEND = (env.CHANGE_FRONTEND == 'true' || !repoExists('bookslib-frontend')) ? 'true' : 'false'
+          if (env.FORCE_BUILD_ALL == 'true') {
+            env.BUILD_AUTH = 'true'
+            env.BUILD_BOOKS = 'true'
+            env.BUILD_REVIEWS = 'true'
+            env.BUILD_FRONTEND = 'true'
+          } else {
+            env.BUILD_AUTH = (env.CHANGE_AUTH == 'true' || !repoExists('auth-service')) ? 'true' : 'false'
+            env.BUILD_BOOKS = (env.CHANGE_BOOKS == 'true' || !repoExists('books-service')) ? 'true' : 'false'
+            env.BUILD_REVIEWS = (env.CHANGE_REVIEWS == 'true' || !repoExists('reviews-service')) ? 'true' : 'false'
+            env.BUILD_FRONTEND = (env.CHANGE_FRONTEND == 'true' || !repoExists('bookslib-frontend')) ? 'true' : 'false'
+          }
         }
       }
     }
