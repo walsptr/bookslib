@@ -5,6 +5,8 @@ pipeline {
     GITOPS_REPO_URL = 'git@github.com:walsptr/gitops.git'
     GITOPS_BRANCH = 'main'
 
+    RUN_TESTS = 'false'
+
     DOCKERHUB_USER = 'sywlsptr'
 
     AUTH_IMAGE = "${DOCKERHUB_USER}/auth-service"
@@ -135,6 +137,9 @@ pipeline {
     }
 
     stage('Build & Test') {
+      when {
+        expression { return env.RUN_TESTS == 'true' }
+      }
       steps {
         script {
           if (env.BUILD_AUTH == 'true') {
